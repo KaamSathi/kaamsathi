@@ -1,16 +1,16 @@
 const express = require('express');
 const { authenticateToken } = require('../middleware/auth');
+const messageController = require('../controllers/messageController');
 
 const router = express.Router();
 
-// Placeholder for messaging routes
-// We'll implement these controllers later if needed
-router.get('/', authenticateToken, (req, res) => {
-  res.json({ status: 'success', message: 'Messages route - to be implemented' });
-});
+// Get all conversations for the current user
+router.get('/conversations', authenticateToken, messageController.getConversations);
 
-router.post('/', authenticateToken, (req, res) => {
-  res.json({ status: 'success', message: 'Send message route - to be implemented' });
-});
+// Get all messages for a conversation
+router.get('/', authenticateToken, messageController.getMessages);
+
+// Send a message
+router.post('/', authenticateToken, messageController.sendMessage);
 
 module.exports = router; 

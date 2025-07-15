@@ -7,6 +7,7 @@ const mongoSanitize = require('express-mongo-sanitize');
 const compression = require('compression');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const Message = require('./models/Message');
 require('dotenv').config();
 
 // Import routes
@@ -111,17 +112,26 @@ io.on('connection', (socket) => {
   });
 
   // Handle private messages
-  socket.on('send_message', (data) => {
+  socket.on('send_message', async (data) => {
     const { senderId, receiverId, message, jobId } = data;
-    
-    // Save message to database (implement in message controller)
-    // For now, just emit to receiver
-    io.to(`user_${receiverId}`).emit('receive_message', {
-      senderId,
-      message,
-      timestamp: new Date(),
-      jobId
-    });
+    try {
+      // Save message to database
+      const msgDoc = await Message.create({
+        conversationId: jobId || receiverId, // Use jobId or receiverId as conversationId
+        sender: senderId,
+        receiver: receiverId,
+        content: message,
+      });
+      // Emit to receiver
+      io.to(`user_${receiverId}`).emit('receive_message', {
+        senderId,
+        message,
+        timestamp: msgDoc.timestamp,
+        jobId
+      });
+    } catch (err) {
+      console.error('Error saving message:', err);
+    }
   });
 
   // Handle job application notifications

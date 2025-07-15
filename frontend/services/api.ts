@@ -353,3 +353,36 @@ export default api;
 
 // Export types for use in components
 export type { Job, Application, User, ApiResponse }; 
+
+const API_BASE = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:5001/api';
+
+export const getMessages = async (conversationId: string, token: string) => {
+  const res = await fetch(`${API_BASE}/messages?conversationId=${conversationId}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+};
+
+export const sendMessage = async (
+  conversationId: string,
+  receiver: string,
+  content: string,
+  token: string
+) => {
+  const res = await fetch(`${API_BASE}/messages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ conversationId, receiver, content }),
+  });
+  return res.json();
+}; 
+
+export const getConversations = async (token: string) => {
+  const res = await fetch(`${API_BASE}/messages/conversations`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return res.json();
+}; 

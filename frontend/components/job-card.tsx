@@ -29,9 +29,10 @@ import { type Job } from "@/services/api"
 interface JobCardProps {
   job: Job
   variant?: "default" | "compact"
+  openChat?: (otherUserId: string, jobId?: string) => void
 }
 
-export default function JobCard({ job, variant = "default" }: JobCardProps) {
+export default function JobCard({ job, variant = "default", openChat }: JobCardProps) {
   const { user } = useAuth()
   const [isSaved, setIsSaved] = useState(false)
   const [isLiked, setIsLiked] = useState(false)
@@ -151,9 +152,14 @@ export default function JobCard({ job, variant = "default" }: JobCardProps) {
               </Button>
             </Link>
             {user?.role === "worker" && (
-              <Link href={`/jobs/${job.id}/apply`}>
-                <Button size="sm">Apply</Button>
-              </Link>
+              <>
+                <Link href={`/jobs/${job.id}/apply`}>
+                  <Button size="sm">Apply</Button>
+                </Link>
+                <Button size="sm" variant="secondary" onClick={() => openChat?.(job.employer.id, job.id)}>
+                  Message Employer
+                </Button>
+              </>
             )}
           </div>
         </CardContent>
@@ -301,11 +307,16 @@ export default function JobCard({ job, variant = "default" }: JobCardProps) {
                   </Button>
                 </Link>
                 {user?.role === "worker" && (
-                  <Link href={`/jobs/${job.id}/apply`}>
-                    <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
-                      Apply Now
+                  <>
+                    <Link href={`/jobs/${job.id}/apply`}>
+                      <Button size="sm" className="bg-blue-500 hover:bg-blue-600">
+                        Apply Now
+                      </Button>
+                    </Link>
+                    <Button size="sm" variant="secondary" onClick={() => openChat?.(job.employer.id, job.id)}>
+                      Message Employer
                     </Button>
-                  </Link>
+                  </>
                 )}
               </div>
             </div>

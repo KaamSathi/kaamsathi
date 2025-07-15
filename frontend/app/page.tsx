@@ -86,6 +86,17 @@ export default function Home() {
   //   }
   // }, [isAuthenticated, user, router])
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push("/dashboard");
+    }
+  }, [isAuthenticated, router]);
+
+  if (isAuthenticated) {
+    // Optionally, show a loading spinner or nothing while redirecting
+    return null;
+  }
+
   const validateContactForm = () => {
     const errors = { firstName: "", lastName: "", email: "", phone: "", message: "" }
     let isValid = true
@@ -309,19 +320,6 @@ export default function Home() {
         <div className="text-center">
           <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
           <p className="text-gray-600">Loading KaamSathi...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // Don't render the landing page if user is authenticated (redirect handled elsewhere)
-  if (isAuthenticated) {
-    router.push("/dashboard")
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-blue-600 mx-auto mb-4" />
-          <p className="text-gray-600">Redirecting to dashboard...</p>
         </div>
       </div>
     )
