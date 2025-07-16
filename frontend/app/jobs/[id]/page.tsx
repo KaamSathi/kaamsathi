@@ -255,18 +255,22 @@ export default function JobDetailPage() {
 
               {user?.role === "worker" && (
                 <div className="flex flex-col gap-2 sm:min-w-[200px]">
-                  <Button 
-                    onClick={handleApply}
-                    disabled={hasApplied || job.status !== 'active'}
-                    className="w-full"
-                  >
-                    {hasApplied ? "Applied" : "Apply Now"}
-                  </Button>
-                  
-                  {hasApplied && (
-                    <p className="text-xs text-center text-green-600">
-                      Application submitted successfully
-                    </p>
+                  {hasApplied ? (
+                    <div className="flex flex-col items-center">
+                      <span className="relative inline-block mb-2">
+                        <svg className="h-10 w-10 text-green-500 animate-ping-slow absolute inset-0 opacity-50" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /></svg>
+                        <CheckCircle className="h-10 w-10 text-green-500 relative z-10 animate-pop" />
+                      </span>
+                      <p className="text-green-700 font-semibold mb-1">Already Applied</p>
+                    </div>
+                  ) : (
+                    <Button 
+                      onClick={handleApply}
+                      disabled={job.status !== 'active'}
+                      className="w-full"
+                    >
+                      Apply Now
+                    </Button>
                   )}
                 </div>
               )}
@@ -470,24 +474,41 @@ export default function JobDetailPage() {
         {user?.role === "worker" && (
           <Card className="lg:hidden">
             <CardContent className="p-4">
-              <Button 
-                onClick={handleApply}
-                disabled={hasApplied || job.status !== 'active'}
-                className="w-full"
-                size="lg"
-              >
-                {hasApplied ? "Applied" : "Apply Now"}
-              </Button>
-              
-              {hasApplied && (
-                <p className="text-sm text-center text-green-600 mt-2">
-                  Application submitted successfully
-                </p>
+              {hasApplied ? (
+                <div className="flex flex-col items-center">
+                  <span className="relative inline-block mb-2">
+                    <svg className="h-10 w-10 text-green-500 animate-ping-slow absolute inset-0 opacity-50" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /></svg>
+                    <CheckCircle className="h-10 w-10 text-green-500 relative z-10 animate-pop" />
+                  </span>
+                  <p className="text-green-700 font-semibold mb-1">Already Applied</p>
+                </div>
+              ) : (
+                <Button 
+                  onClick={handleApply}
+                  disabled={job.status !== 'active'}
+                  className="w-full"
+                  size="lg"
+                >
+                  Apply Now
+                </Button>
               )}
             </CardContent>
           </Card>
         )}
       </div>
+      <style jsx global>{`
+        @keyframes pop {
+          0% { transform: scale(0.7); opacity: 0.5; }
+          60% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+          animation: pop 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+        .animate-ping-slow {
+          animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+        }
+      `}</style>
     </SidebarLayout>
   )
 }

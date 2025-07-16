@@ -102,39 +102,6 @@ npm run test       # Run tests
 npm run seed       # Seed database with sample data
 ```
 
-## 🔧 Environment Configuration
-
-### Frontend (.env.local)
-```env
-NEXT_PUBLIC_API_URL=http://localhost:5001/api
-NEXT_PUBLIC_APP_URL=http://localhost:3000
-NEXT_PUBLIC_ENVIRONMENT=development
-```
-
-### Backend (.env)
-```env
-PORT=5001
-NODE_ENV=development
-MONGODB_URI=mongodb://localhost:27017/kaamsathi
-JWT_SECRET=your-super-secret-jwt-key
-JWT_EXPIRES_IN=7d
-BCRYPT_SALT_ROUNDS=12
-
-# Email Configuration
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USER=your-email@gmail.com
-SMTP_PASS=your-app-password
-
-# File Upload
-MAX_FILE_SIZE=5MB
-UPLOAD_PATH=uploads/
-
-# SMS/OTP Configuration
-TWILIO_ACCOUNT_SID=your-twilio-sid
-TWILIO_AUTH_TOKEN=your-twilio-token
-TWILIO_PHONE_NUMBER=your-twilio-number
-```
 
 ## 📊 API Documentation
 

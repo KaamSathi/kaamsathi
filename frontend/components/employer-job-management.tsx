@@ -19,6 +19,8 @@ import {
   MapPin,
   Search,
   Plus,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react"
 import {
   DropdownMenu,
@@ -27,116 +29,97 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { mockJobs } from "@/data/mock-data"
 import { toast } from "@/hooks/use-toast"
 import Link from "next/link"
+import api, { Job } from "../services/api"
 
-interface EmployerJob {
-  id: number
-  title: string
-  location: string
-  salary: string
-  description: string
-  skills: string[]
-  status: "active" | "paused" | "closed" | "draft"
-  applicantCount: number
-  viewCount: number
-  createdAt: string
-  expiresAt: string
+interface Application {
+  id: string
+  applicant: any
+  status: string
+  coverLetter?: string
+  proposedSalary?: number
+  availability?: string
+  appliedAt: string
 }
 
 export default function EmployerJobManagement() {
-  const [jobs, setJobs] = useState<EmployerJob[]>([])
+  const [jobs, setJobs] = useState<Job[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [sortBy, setSortBy] = useState("created_date")
-  const [filteredJobs, setFilteredJobs] = useState<EmployerJob[]>([])
+  const [expandedJobId, setExpandedJobId] = useState<string | null>(null)
+  const [applications, setApplications] = useState<Record<string, Application[]>>({})
+  const [loadingJobs, setLoadingJobs] = useState(false)
+  const [loadingApps, setLoadingApps] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
-    loadEmployerJobs()
-  }, [])
+    fetchEmployerJobs()
+  }, [statusFilter])
 
-  useEffect(() => {
-    filterAndSortJobs()
-  }, [jobs, searchTerm, statusFilter, sortBy])
-
-  const loadEmployerJobs = () => {
-    // Simulate employer's jobs with additional data
-    const employerJobs: EmployerJob[] = mockJobs.slice(0, 5).map((job, index) => ({
-      ...job,
-      status: index === 0 ? "draft" : index === 1 ? "paused" : index === 4 ? "closed" : "active",
-      applicantCount: Math.floor(Math.random() * 50) + 5,
-      viewCount: Math.floor(Math.random() * 200) + 50,
-      createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-      expiresAt: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-    }))
-    setJobs(employerJobs)
+  const fetchEmployerJobs = async () => {
+    setLoadingJobs(true)
+    try {
+      const res = await api.jobs.getEmployerJobs({ status: statusFilter })
+      if (res && res.status === "success" && res.data && res.data.jobs) {
+        setJobs(res.data.jobs as Job[])
+      } else {
+        setJobs([])
+      }
+    } catch (err) {
+      setJobs([])
+    } finally {
+      setLoadingJobs(false)
+    }
   }
 
-  const filterAndSortJobs = () => {
-    let filtered = [...jobs]
-
-    // Apply search filter
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (job) =>
-          job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          job.location.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
+  const fetchApplications = async (jobId: string) => {
+    setLoadingApps((prev) => ({ ...prev, [jobId]: true }))
+    try {
+      const res = await api.applications.getByJob(jobId)
+      if (res.status === "success" && res.data) {
+        setApplications((prev) => ({ ...prev, [jobId]: res.data.applications }))
+      } else {
+        setApplications((prev) => ({ ...prev, [jobId]: [] }))
+      }
+    } catch (err) {
+      setApplications((prev) => ({ ...prev, [jobId]: [] }))
+    } finally {
+      setLoadingApps((prev) => ({ ...prev, [jobId]: false }))
     }
-
-    // Apply status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter((job) => job.status === statusFilter)
-    }
-
-    // Apply sorting
-    switch (sortBy) {
-      case "created_date":
-        filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        break
-      case "applicants":
-        filtered.sort((a, b) => b.applicantCount - a.applicantCount)
-        break
-      case "views":
-        filtered.sort((a, b) => b.viewCount - a.viewCount)
-        break
-      case "title":
-        filtered.sort((a, b) => a.title.localeCompare(b.title))
-        break
-    }
-
-    setFilteredJobs(filtered)
   }
 
-  const updateJobStatus = (jobId: number, newStatus: EmployerJob["status"]) => {
-    const updatedJobs = jobs.map((job) => (job.id === jobId ? { ...job, status: newStatus } : job))
-    setJobs(updatedJobs)
-
-    const statusMessages = {
-      active: "Job has been activated",
-      paused: "Job has been paused",
-      closed: "Job has been closed",
-      draft: "Job has been moved to draft",
+  const handleExpand = (jobId: string) => {
+    if (expandedJobId === jobId) {
+      setExpandedJobId(null)
+    } else {
+      setExpandedJobId(jobId)
+      if (!applications[jobId]) {
+        fetchApplications(jobId)
+      }
     }
+  }
 
-    toast({
-      title: "Job Status Updated",
-      description: statusMessages[newStatus],
+  // Filtering and sorting
+  const filteredJobs = jobs
+    .filter((job) =>
+      job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (job.location?.city || "").toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "created_date":
+          return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        case "applicants":
+          return (b.currentApplications || 0) - (a.currentApplications || 0)
+        case "title":
+          return a.title.localeCompare(b.title)
+        default:
+          return 0
+      }
     })
-  }
 
-  const deleteJob = (jobId: number) => {
-    const updatedJobs = jobs.filter((job) => job.id !== jobId)
-    setJobs(updatedJobs)
-
-    toast({
-      title: "Job Deleted",
-      description: "The job posting has been permanently deleted.",
-    })
-  }
-
-  const getStatusColor = (status: EmployerJob["status"]) => {
+  const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
         return "bg-green-100 text-green-800"
@@ -151,7 +134,7 @@ export default function EmployerJobManagement() {
     }
   }
 
-  const getStatusIcon = (status: EmployerJob["status"]) => {
+  const getStatusIcon = (status: string) => {
     switch (status) {
       case "active":
         return <Play className="h-3 w-3" />
@@ -181,99 +164,15 @@ export default function EmployerJobManagement() {
         </Link>
       </div>
 
-      {/* Job Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Play className="h-5 w-5 text-green-500" />
-              <div>
-                <p className="text-2xl font-bold">{jobs.filter((j) => j.status === "active").length}</p>
-                <p className="text-sm text-gray-600">Active Jobs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
-              <div>
-                <p className="text-2xl font-bold">{jobs.reduce((sum, job) => sum + job.applicantCount, 0)}</p>
-                <p className="text-sm text-gray-600">Total Applicants</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-purple-500" />
-              <div>
-                <p className="text-2xl font-bold">{jobs.reduce((sum, job) => sum + job.viewCount, 0)}</p>
-                <p className="text-sm text-gray-600">Total Views</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-orange-500" />
-              <div>
-                <p className="text-2xl font-bold">{jobs.length}</p>
-                <p className="text-sm text-gray-600">Total Jobs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Search and Filters */}
-      <Card>
-        <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                <Input
-                  placeholder="Search your jobs..."
-                  className="pl-10"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-              </div>
-            </div>
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[150px]">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="paused">Paused</SelectItem>
-                <SelectItem value="closed">Closed</SelectItem>
-                <SelectItem value="draft">Draft</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Sort by" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="created_date">Date Created</SelectItem>
-                <SelectItem value="applicants">Applicants</SelectItem>
-                <SelectItem value="views">Views</SelectItem>
-                <SelectItem value="title">Job Title</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Remove Search and Filters section for a cleaner UI */}
 
       {/* Jobs List */}
       <div className="space-y-4">
-        {filteredJobs.length > 0 ? (
+        {loadingJobs ? (
+          <Card>
+            <CardContent className="p-12 text-center">Loading jobs...</CardContent>
+          </Card>
+        ) : filteredJobs.length > 0 ? (
           filteredJobs.map((job) => (
             <Card key={job.id}>
               <CardContent className="p-6">
@@ -291,11 +190,11 @@ export default function EmployerJobManagement() {
                     <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-3">
                       <div className="flex items-center gap-1">
                         <MapPin className="h-4 w-4" />
-                        {job.location}
+                        {job.location?.city || "-"}
                       </div>
                       <div className="flex items-center gap-1">
                         <DollarSign className="h-4 w-4" />
-                        {job.salary}
+                        {job.salary?.min} - {job.salary?.max} {job.salary?.currency}
                       </div>
                       <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
@@ -303,104 +202,41 @@ export default function EmployerJobManagement() {
                       </div>
                     </div>
                   </div>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Eye className="h-4 w-4 mr-2" />
-                        View Job
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Edit Job
-                      </DropdownMenuItem>
-                      <DropdownMenuSeparator />
-                      {job.status === "active" ? (
-                        <DropdownMenuItem onClick={() => updateJobStatus(job.id, "paused")}>
-                          <Pause className="h-4 w-4 mr-2" />
-                          Pause Job
-                        </DropdownMenuItem>
-                      ) : job.status === "paused" ? (
-                        <DropdownMenuItem onClick={() => updateJobStatus(job.id, "active")}>
-                          <Play className="h-4 w-4 mr-2" />
-                          Activate Job
-                        </DropdownMenuItem>
-                      ) : null}
-                      {job.status !== "closed" && (
-                        <DropdownMenuItem onClick={() => updateJobStatus(job.id, "closed")}>
-                          <Trash2 className="h-4 w-4 mr-2" />
-                          Close Job
-                        </DropdownMenuItem>
-                      )}
-                      <DropdownMenuSeparator />
-                      <DropdownMenuItem onClick={() => deleteJob(job.id)} className="text-red-600">
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Delete Job
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  <Button variant="ghost" size="sm" onClick={() => handleExpand(job.id)}>
+                    {expandedJobId === job.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    {expandedJobId === job.id ? "Hide Applications" : "View Applications"}
+                  </Button>
                 </div>
 
                 <p className="text-gray-700 mb-4 line-clamp-2">{job.description}</p>
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Users className="h-4 w-4 text-blue-500" />
-                      <span className="text-lg font-semibold">{job.applicantCount}</span>
-                    </div>
-                    <p className="text-xs text-gray-600">Applicants</p>
+                {/* Applications Section */}
+                {expandedJobId === job.id && (
+                  <div className="mt-6 border-t pt-4">
+                    {loadingApps[job.id] ? (
+                      <div className="text-center py-4">Loading applications...</div>
+                    ) : applications[job.id] && applications[job.id].length > 0 ? (
+                      <div className="space-y-4">
+                        {applications[job.id].map((app) => (
+                          <Card key={app.id} className="bg-gray-50">
+                            <CardContent className="p-4 flex flex-col md:flex-row md:items-center md:justify-between">
+                              <div>
+                                <div className="font-semibold">{app.applicant?.name || "Unknown"}</div>
+                                <div className="text-xs text-gray-500 mb-1">Applied {new Date(app.appliedAt).toLocaleDateString()}</div>
+                                <div className="text-sm text-gray-700 mb-1">Status: {app.status}</div>
+                                {app.coverLetter && <div className="text-xs text-gray-600 mb-1">Cover: {app.coverLetter}</div>}
+                                {app.proposedSalary && <div className="text-xs text-gray-600 mb-1">Proposed: {app.proposedSalary}</div>}
+                                {app.availability && <div className="text-xs text-gray-600 mb-1">Availability: {app.availability}</div>}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="text-center py-4 text-gray-500">No applications for this job yet.</div>
+                    )}
                   </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Eye className="h-4 w-4 text-green-500" />
-                      <span className="text-lg font-semibold">{job.viewCount}</span>
-                    </div>
-                    <p className="text-xs text-gray-600">Views</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <Calendar className="h-4 w-4 text-purple-500" />
-                      <span className="text-lg font-semibold">
-                        {Math.ceil((new Date(job.expiresAt).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600">Days Left</p>
-                  </div>
-                  <div className="text-center p-3 bg-gray-50 rounded-lg">
-                    <div className="flex items-center justify-center gap-1 mb-1">
-                      <span className="text-lg font-semibold">
-                        {job.applicantCount > 0 ? Math.round((job.viewCount / job.applicantCount) * 100) / 100 : 0}%
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-600">Conversion</p>
-                  </div>
-                </div>
-
-                <div className="flex justify-between items-center">
-                  <div className="flex flex-wrap gap-2">
-                    {job.skills.slice(0, 3).map((skill, index) => (
-                      <Badge key={index} variant="secondary">
-                        {skill}
-                      </Badge>
-                    ))}
-                    {job.skills.length > 3 && <Badge variant="outline">+{job.skills.length - 3} more</Badge>}
-                  </div>
-                  <div className="flex gap-2">
-                    <Link href={`/applications?jobId=${job.id}`}>
-                      <Button variant="outline" size="sm">
-                        View Applications
-                      </Button>
-                    </Link>
-                    <Link href={`/jobs/${job.id}`}>
-                      <Button size="sm">View Job</Button>
-                    </Link>
-                  </div>
-                </div>
+                )}
               </CardContent>
             </Card>
           ))

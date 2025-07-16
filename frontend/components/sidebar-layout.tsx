@@ -49,7 +49,6 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const workerNavItems = [
     { href: "/dashboard", label: "Home", icon: Home },
     { href: "/jobs", label: "Jobs", icon: Briefcase },
-    { href: "/applications", label: "Applications", icon: FileText },
     { href: "/messages", label: "Messages", icon: MessageSquare },
     { href: "/profile", label: "Profile", icon: User },
   ]
@@ -57,7 +56,6 @@ export default function SidebarLayout({ children }: SidebarLayoutProps) {
   const employerNavItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
     { href: "/jobs", label: "Jobs", icon: Briefcase },
-    { href: "/applications", label: "Applications", icon: FileText },
     { href: "/messages", label: "Messages", icon: MessageSquare },
     { href: "/profile", label: "Profile", icon: User },
   ]

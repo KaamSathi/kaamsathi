@@ -40,6 +40,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 // We will no longer need MOCK_USERS
 // const MOCK_USERS: User[] = [ ... ]
 
+export { AuthContext };
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)

@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { MapPin, DollarSign, Briefcase, Calendar, Building, Upload, ArrowLeft, Loader2 } from "lucide-react"
+import { MapPin, DollarSign, Briefcase, Calendar, Building, Upload, ArrowLeft, Loader2, CheckCircle } from "lucide-react"
 import api, { type Job } from "@/services/api"
 import { toast } from "@/hooks/use-toast"
 import Link from "next/link"
@@ -38,6 +38,8 @@ export default function JobApplicationPage() {
     coverLetter: "",
     proposedSalary: "",
   })
+
+  const [alreadyApplied, setAlreadyApplied] = useState(false)
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -70,12 +72,7 @@ export default function JobApplicationPage() {
         
         // Check if already applied
         if (response.data.hasApplied) {
-          toast({
-            title: "Already Applied",
-            description: "You have already applied for this job.",
-            variant: "default",
-          })
-          router.push(`/jobs/${jobId}`)
+          setAlreadyApplied(true)
           return
         }
       } else {
@@ -193,6 +190,34 @@ export default function JobApplicationPage() {
             </div>
           </div>
         </div>
+      </SidebarLayout>
+    )
+  }
+
+  if (alreadyApplied) {
+    return (
+      <SidebarLayout>
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <span className="relative inline-block mb-4">
+            <svg className="h-16 w-16 text-green-500 animate-ping-slow absolute inset-0 opacity-50" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /></svg>
+            <CheckCircle className="h-16 w-16 text-green-500 relative z-10 animate-pop" />
+          </span>
+          <h2 className="text-2xl font-bold text-green-700 mb-2">Already Applied</h2>
+          <p className="text-gray-600 mb-4">You have already applied for this job.</p>
+        </div>
+        <style jsx global>{`
+          @keyframes pop {
+            0% { transform: scale(0.7); opacity: 0.5; }
+            60% { transform: scale(1.1); opacity: 1; }
+            100% { transform: scale(1); opacity: 1; }
+          }
+          .animate-pop {
+            animation: pop 0.5s cubic-bezier(0.4,0,0.2,1);
+          }
+          .animate-ping-slow {
+            animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+          }
+        `}</style>
       </SidebarLayout>
     )
   }

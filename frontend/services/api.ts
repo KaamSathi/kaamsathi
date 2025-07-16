@@ -248,6 +248,17 @@ class ApiService {
     getRecommendations: async (): Promise<ApiResponse<{ jobs: Job[] }>> => {
       return this.request('/jobs/recommendations/for-me');
     },
+
+    getEmployerJobs: async (params: { page?: number; limit?: number; status?: string } = {}): Promise<ApiResponse<{ jobs: Job[]; pagination: any }>> => {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      const queryString = queryParams.toString();
+      return this.request(`/jobs/employer/my-jobs${queryString ? `?${queryString}` : ''}`);
+    },
   };
 
   // Applications endpoints
@@ -316,6 +327,17 @@ class ApiService {
         method: 'POST',
         body: JSON.stringify(interviewData),
       });
+    },
+
+    getByJob: async (jobId: string, params: { page?: number; limit?: number; status?: string } = {}): Promise<ApiResponse<{ applications: Application[]; job: Job; pagination: any }>> => {
+      const queryParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          queryParams.append(key, value.toString());
+        }
+      });
+      const queryString = queryParams.toString();
+      return this.request(`/applications/jobs/${jobId}${queryString ? `?${queryString}` : ''}`);
     },
   };
 

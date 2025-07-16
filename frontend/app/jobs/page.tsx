@@ -178,14 +178,7 @@ export default function JobsPage() {
                 : "Manage your job postings and track applications"}
             </p>
           </div>
-          {user.role === "employer" && (
-            <Link href="/post-job">
-              <Button size="sm" className="bg-blue-500 hover:bg-blue-600 text-xs sm:text-sm px-3 sm:px-4 w-full sm:w-auto">
-                <span className="hidden sm:inline">Post New Job</span>
-                <span className="sm:hidden">Post Job</span>
-              </Button>
-            </Link>
-          )}
+          {/* Remove the Post Job button from here to ensure only one button is visible */}
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { useRouter, useParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
 import SidebarLayout from "@/components/sidebar-layout"
@@ -14,13 +14,21 @@ export default function ApplicationSuccessPage() {
   const { user, isAuthenticated } = useAuth()
   const router = useRouter()
   const params = useParams()
-  const jobId = Number(params.id)
+  const jobId = params.id as string
 
   const job = mockJobs.find((j) => j.id === jobId)
+  const redirectTimeout = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     if (!isAuthenticated) {
       router.push("/login")
+    }
+    // Redirect after 3 seconds
+    redirectTimeout.current = setTimeout(() => {
+      router.push("/applications")
+    }, 3000)
+    return () => {
+      if (redirectTimeout.current) clearTimeout(redirectTimeout.current)
     }
   }, [isAuthenticated, router])
 
@@ -33,13 +41,18 @@ export default function ApplicationSuccessPage() {
       <div className="max-w-2xl mx-auto py-12">
         <Card className="text-center">
           <CardContent className="p-12">
-            <div className="mb-6">
-              <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <div className="mb-6 flex flex-col items-center">
+              {/* Animated checkmark */}
+              <span className="relative inline-block mb-4">
+                <svg className="h-16 w-16 text-green-500 animate-ping-slow absolute inset-0 opacity-50" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /></svg>
+                <CheckCircle className="h-16 w-16 text-green-500 relative z-10 animate-pop" />
+              </span>
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Application Submitted!</h1>
               <p className="text-gray-600">
                 Your application for <strong>{job.title}</strong> at <strong>{job.company}</strong> has been
                 successfully submitted.
               </p>
+              <p className="text-sm text-gray-400 mt-2">Redirecting to Applications...</p>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-6 mb-8">
@@ -83,6 +96,19 @@ export default function ApplicationSuccessPage() {
           </CardContent>
         </Card>
       </div>
+      <style jsx global>{`
+        @keyframes pop {
+          0% { transform: scale(0.7); opacity: 0.5; }
+          60% { transform: scale(1.1); opacity: 1; }
+          100% { transform: scale(1); opacity: 1; }
+        }
+        .animate-pop {
+          animation: pop 0.5s cubic-bezier(0.4,0,0.2,1);
+        }
+        .animate-ping-slow {
+          animation: ping 1.5s cubic-bezier(0,0,0.2,1) infinite;
+        }
+      `}</style>
     </SidebarLayout>
   )
 }
